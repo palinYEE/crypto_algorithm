@@ -5,4 +5,6 @@
 ## list()
 
 * AES 
+* AES 8x32 lookup table
 * masking value using Masking AES
+* LEA
