@@ -1,6 +1,7 @@
 #include<stdio.h>
 
 #define Nr 10 // 라운드 수 
+#define xtimes(x) (x << 1) ^ ((x >> 7) & 0x1b)
 
 const static unsigned char sbox[256] = {
   //0     1    2      3     4    5     6     7      8    9     A      B    C     D     E     F
@@ -68,4 +69,54 @@ int shiftrows(unsigned char **state){
     state[2][3] = temp;
 
     // 3 row
+    temp = state[3][3];
+    state[3][3] = state[3][2];
+    state[3][2] = state[3][1];
+    state[3][1] = state[3][0];
+    state[3][0] = temp;
+
+}
+
+int mixcolumns(unsigned char **state){
+  // 02 03 01 01
+  // 01 02 03 01
+  // 01 01 02 03
+  // 03 01 01 02
+  int temp;
+  unsigned char a[4];
+
+  for(int i=0; i<4; i++){
+    temp = state[0][i] ^ state[1][i] ^ state[2][i] ^ state[3][i];
+    a[0] = xtimes(state[0][i]) ^ xtimes(state[1][i]) ^ temp ^ state[0][i];
+    a[1] = xtimes(state[1][i]) ^ xtimes(state[2][i]) ^ temp ^ state[1][i];
+    a[2] = xtimes(state[2][i]) ^ xtimes(state[3][i]) ^ temp ^ state[2][i];
+    a[3] = xtimes(state[3][i]) ^ xtimes(state[0][i]) ^ temp ^ state[3][i];
+
+    for(int j=0; j<4; j++){
+      state[j][i] = a[j];
+    }    
+  }
+}
+
+int addroundkey(unsigned char **state, unsigned int *rk){
+   for(int i=0; i<4; i++){
+     state[0][i] ^= (rk[i] >> 24) & 0xff;
+     state[1][i] ^= (rk[i] >> 16) & 0xff;
+     state[2][i] ^= (rk[i] >> 8) & 0xff;
+     state[3][i] ^= (rk[i]) & 0xff;
+   }
+}
+
+int encryption(unsigned char **state, unsigned int *rk){
+
+  addroundkey(state, rk);
+  for(int round = 0; round < Nr; round ++){
+    subbytes(state);
+    shiftrows(state);
+    mixcolumns(state);
+    addroundkey(state, rk); // 이게 아닌데...
+  }
+  subbytes(state);
+  shiftrows(state);
+  addroundkey(state, rk); // 이게 아닌데...
 }
